@@ -1,0 +1,52 @@
+{
+  "Id": "ActionTemplates-33",
+  "Name": "Visual Studio Online - Notify Team Room",
+  "Description": "Notifies a Visual Studio Online Team Room of the deployment.",
+  "ActionType": "Octopus.Script",
+  "Version": 7,
+  "Properties": {
+    "Octopus.Action.Script.ScriptBody": "$account = $OctopusParameters['AccountName']\n$roomid = $OctopusParameters['RoomId']\n$username = $OctopusParameters['Username']\n$password = $OctopusParameters['Password']\n\n$errorMsg = $OctopusParameters['Octopus.Deployment.Error']\n\n$message = ''\n\nif([string]::IsNullOrEmpty($errorMsg))\n{\n    $message = \"Octopus Deploy: $($OctopusParameters['Octopus.Project.Name']) [v$($OctopusParameters['Octopus.Release.Number'])] deployed to $($OctopusParameters['Octopus.Environment.Name'])\"\n}\nelse\n{\n    $message = \"Octopus Deploy: Failed to deploy $($OctopusParameters['Octopus.Project.Name']) [v$($OctopusParameters['Octopus.Release.Number'])] to $($OctopusParameters['Octopus.Environment.Name']) - $errorMsg\"\n}\n\n$uri = \"https://$account.visualstudio.com/defaultcollection/_apis/chat/rooms/$roomid/messages\"\n$postBody = \"{ content: '$message' }\"\n$postStr = [System.Text.Encoding]::UTF8.GetBytes($postBody)\n\n$creds = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([System.String]::Format(\"{0}:{1}\", $username, $password)));\n\n$webRequest = [System.Net.WebRequest]::Create($uri)\n$webRequest.ContentType = \"application/json\"\n$webrequest.ContentLength = $postStr.Length\n$webRequest.Method = \"POST\"\n$webRequest.Accept = \"application/json;api-version=1.0-preview\"\n$webRequest.Headers.Add(\"Authorization\", \"Basic $creds\")\n\n$requestStream = $webRequest.GetRequestStream()\n$requestStream.Write($postStr, 0,$postStr.length)\n$requestStream.Close()\n\n[System.Net.WebResponse] $resp = $webRequest.GetResponse()\n$rs = $resp.GetResponseStream()\n\n[System.IO.StreamReader] $sr = New-Object System.IO.StreamReader -argumentList $rs\n$sr.ReadToEnd()\n\nWrite-Host \"Error (Deployment) \" + $OctopusParameters['Octopus.Deployment.Error']\nWrite-Host \"Error Detail (Deployment) \" + $OctopusParameters['Octopus.Deployment.ErrorDetail']\nWrite-Host \"Code \" + $OctopusParameters['Octopus.Step.Status.Code']\nWrite-Host \"Error (Step) \" + $OctopusParameters['Octopus.Step.Status.Error']\nWrite-Host \"Error Detail (Step) \" + $OctopusParameters['Octopus.Step.Status.ErrorDetail']\nWrite-Host \"Link \" + $OctopusParameters['Octopus.Web.DeploymentLink']\n"
+  },
+  "SensitiveProperties": {},
+  "Parameters": [
+    {
+      "Name": "RoomId",
+      "Label": "Room",
+      "HelpText": "The room id that you wish to post a notification to",
+      "DefaultValue": null,
+      "DisplaySettings": {
+        "Octopus.ControlType": "SingleLineText"
+      }
+    },
+    {
+      "Name": "AccountName",
+      "Label": "Account Name",
+      "HelpText": "The Visual Studio Online Account Name to use. This is the first part of the URL you use to access Visual Studio Online e.g. https://{accountname}.visualstudio.com/",
+      "DefaultValue": null,
+      "DisplaySettings": {}
+    },
+    {
+      "Name": "Username",
+      "Label": "Username",
+      "HelpText": "The \"Alternative Credentials\" username for the user who will post the message. See http://www.visualstudio.com/integrate/get-started/get-started-auth-introduction-vsi for more details.",
+      "DefaultValue": null,
+      "DisplaySettings": {}
+    },
+    {
+      "Name": "Password",
+      "Label": "Password",
+      "HelpText": "The \"Alternative Credentials\" password for the user who will post the message. See http://www.visualstudio.com/integrate/get-started/get-started-auth-introduction-vsi for more details.",
+      "DefaultValue": null,
+      "DisplaySettings": {
+        "Octopus.ControlType": "Sensitive"
+      }
+    }
+  ],
+  "LastModifiedOn": "2014-10-07T09:49:24.434+00:00",
+  "LastModifiedBy": "rhysgodfrey",
+  "$Meta": {
+    "ExportedAt": "2015-03-13T09:16:13.784Z",
+    "OctopusVersion": "2.6.0.778",
+    "Type": "ActionTemplate"
+  }
+}
